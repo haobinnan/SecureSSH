@@ -18,8 +18,9 @@ if [ ${#strLogPath} -eq 0 ]; then
     exit
 fi
 
-IP_List=$(cat ${strLogPath} | grep "$(date +%b) $(date +%_d) $(date +%H):" | grep 'Failed password' | awk '{print $(NF-3)}' | sort | uniq -c | awk '{print $2"="$1}')
-IP_List=${IP_List}" "$(cat ${strLogPath} | grep "$(date +%b) $(date +%_d) $(date +%H):" | grep 'Connection closed by' | awk '{print $(NF-3)}' | sort | uniq -c | awk '{print $2"="$1}')
+IP_List=$(cat ${strLogPath} | grep "$(date +%b) $(date +%_d) $(date +%H):" | grep 'Failed password' | awk '{print $(NF-3)}' | egrep -o '([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})|(([a-f0-9:]+:+)+[a-f0-9]+)' | sort | uniq -c | awk '{print $2"="$1}')
+IP_List=${IP_List}" "$(cat ${strLogPath} | grep "$(date +%b) $(date +%_d) $(date +%H):" | grep 'Connection closed by' | awk '{print $(NF-3)}' | egrep -o '([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})|(([a-f0-9:]+:+)+[a-f0-9]+)' | sort | uniq -c | awk '{print $2"="$1}')
+IP_List=${IP_List}" "$(cat ${strLogPath} | grep "$(date +%b) $(date +%_d) $(date +%H):" | grep 'no matching key exchange method found' | awk '{print $(10)}' | egrep -o '([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})|(([a-f0-9:]+:+)+[a-f0-9]+)' | sort | uniq -c | awk '{print $2"="$1}')
 #IP_List=$(cat ${strLogPath} | grep "$(date +%b) 30 19:" | grep 'Failed password' | awk '{print $(NF-3)}' | sort | uniq -c | awk '{print $2"="$1}')
 
 #Add IP
@@ -32,7 +33,8 @@ do
             if [ `grep -c "$(echo ${strIP})" "${strPath_IP_Blacklist}"` -eq '0' ]; then
                 strDelTime=$(date +'%Y-%m-%d %H:%M:%S' --date="+7 day")
                 echo ${strDelTime}","${strIP}","${strCount} >> ${strPath_IP_Blacklist}
-                if echo ${strIP} | grep -E "^(([1-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([1-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$" >>/dev/null 2>&1; then
+
+                if echo ${strIP} | egrep -o '([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})' >>/dev/null 2>&1; then
                     sudo ufw insert 1 deny from ${strIP} to any comment "From: secure_ssh.sh | Remove after: ${strDelTime}"
                 else
                     numbered=$(sudo ufw status numbered | grep -F ' (v6)' | head -1 | sed -e 's/\[\([0-9]*\)\].*/\1/')
@@ -53,6 +55,7 @@ do
         strCount=$(echo ${line} | awk -F ',' '{print $3}')
         if [ `date -d "$(date +'%Y-%m-%d %H:%M:%S')" +%s` -gt `date -d "$strDateTime" +%s` ]; then
             sed -i "/${strIP}/d" ${strPath_IP_Blacklist}
+
             sudo ufw delete deny from ${strIP}
         fi
     fi
