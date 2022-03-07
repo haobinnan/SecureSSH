@@ -21,9 +21,10 @@ if [ ${#strLogPath} -eq 0 ]; then
     exit
 fi
 
-IP_List=$(cat ${strLogPath} | grep "$(date +%b) $(date +%_d) $(date +%H):" | grep 'Failed password' | awk '{print $(NF-3)}' | sort | uniq -c | awk '{print $2"="$1}')
-IP_List=${IP_List}" "$(cat ${strLogPath} | grep "$(date +%b) $(date +%_d) $(date +%H):" | grep 'Connection closed by' | awk '{print $(NF-3)}' | sort | uniq -c | awk '{print $2"="$1}')
-#IP_List=$(cat ${strLogPath} | grep "$(date +%b) 30 19:" | grep 'Failed password' | awk '{print $(NF-3)}' | sort | uniq -c | awk '{print $2"="$1}')
+IP_List=$(cat ${strLogPath} | grep -a "$(date +%b) $(date +%_d) $(date +%H):" | grep 'Failed password' | awk '{print $(NF-3)}' | egrep -o '([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})|(([a-f0-9:]+:+)+[a-f0-9]+)' | sort | uniq -c | awk '{print $2"="$1}')
+IP_List=${IP_List}" "$(cat ${strLogPath} | grep -a "$(date +%b) $(date +%_d) $(date +%H):" | grep 'Connection closed by' | awk '{print $(NF-3)}' | egrep -o '([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})|(([a-f0-9:]+:+)+[a-f0-9]+)' | sort | uniq -c | awk '{print $2"="$1}')
+IP_List=${IP_List}" "$(cat ${strLogPath} | grep -a "$(date +%b) $(date +%_d) $(date +%H):" | grep 'no matching key exchange method found' | awk '{print $(10)}' | egrep -o '([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})|(([a-f0-9:]+:+)+[a-f0-9]+)' | sort | uniq -c | awk '{print $2"="$1}')
+#IP_List=$(cat ${strLogPath} | grep -a "$(date +%b) 30 19:" | grep 'Failed password' | awk '{print $(NF-3)}' | sort | uniq -c | awk '{print $2"="$1}')
 
 #Add IP
 echo ${IP_List} | sed 's/ /\n/g' | while read line
